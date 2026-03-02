@@ -89,3 +89,26 @@
     background: var(--gradient-card);
   }
 }
+
+/* Leaflet dark theme overrides */
+.leaflet-popup-content-wrapper {
+  background: hsl(220, 18%, 10%) !important;
+  color: hsl(210, 20%, 92%) !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid hsl(220, 14%, 18%) !important;
+  box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.4) !important;
+}
+
+.leaflet-popup-tip {
+  background: hsl(220, 18%, 10%) !important;
+}
+
+.leaflet-popup-close-button {
+  color: hsl(215, 12%, 50%) !important;
+}
+
+.parking-marker,
+.user-marker {
+  background: transparent !important;
+  border: none !important;
+}

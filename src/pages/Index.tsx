@@ -2,12 +2,14 @@ import { useState, useCallback } from "react";
 import { ParkingSlot } from "@/types/parking";
 import { useGeolocation, getDistanceMeters } from "@/hooks/useGeolocation";
 import ParkingSlotCard from "@/components/ParkingSlotCard";
+import ParkingMap from "@/components/ParkingMap";
 import BookingTimer from "@/components/BookingTimer";
 import StatusLegend from "@/components/StatusLegend";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Car, MapPin, Crown, RefreshCw, Locate } from "lucide-react";
+import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Simulated parking lot center (will be near user for demo)
@@ -178,18 +180,39 @@ export default function Index() {
         {/* Legend */}
         <StatusLegend />
 
-        {/* Parking Grid */}
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-          {slots.map((slot) => (
-            <ParkingSlotCard
-              key={slot.id}
-              slot={slot}
+        {/* View Toggle */}
+        <Tabs defaultValue="grid" className="w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="grid" className="flex-1 gap-2">
+              <Grid3X3 className="h-4 w-4" /> Grid
+            </TabsTrigger>
+            <TabsTrigger value="map" className="flex-1 gap-2">
+              <Map className="h-4 w-4" /> Map
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="grid">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+              {slots.map((slot) => (
+                <ParkingSlotCard
+                  key={slot.id}
+                  slot={slot}
+                  onBook={handleBook}
+                  disabled={!!bookedSlotId || !location}
+                  isUserSlot={slot.id === bookedSlotId}
+                />
+              ))}
+            </div>
+          </TabsContent>
+          <TabsContent value="map">
+            <ParkingMap
+              slots={slots}
+              userLocation={location}
+              bookedSlotId={bookedSlotId}
               onBook={handleBook}
               disabled={!!bookedSlotId || !location}
-              isUserSlot={slot.id === bookedSlotId}
             />
-          ))}
-        </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Footer hint */}
         <p className="text-center text-xs text-muted-foreground pt-4">
