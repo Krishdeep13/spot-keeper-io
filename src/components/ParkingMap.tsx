@@ -85,7 +85,8 @@ export default function ParkingMap({ slots, userLocation, bookedSlotId, onBook, 
     : [slots[0]?.lat ?? 12.9716, slots[0]?.lng ?? 77.5946];
 
   const openNavigation = (lat: number, lng: number) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, "_blank");
+    const origin = userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : "";
+    window.open(`https://www.google.com/maps/dir/?api=1${origin}&destination=${lat},${lng}&travelmode=driving`, "_blank");
   };
 
   return (

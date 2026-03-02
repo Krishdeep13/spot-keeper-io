@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Timer, Navigation, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ParkingSlot } from "@/types/parking";
+import { ParkingSlot, UserLocation } from "@/types/parking";
 
 interface Props {
   slot: ParkingSlot;
   onExpire: () => void;
   onCancel: () => void;
   isPremium: boolean;
+  userLocation: UserLocation | null;
 }
 
-export default function BookingTimer({ slot, onExpire, onCancel, isPremium }: Props) {
+export default function BookingTimer({ slot, onExpire, onCancel, isPremium, userLocation }: Props) {
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
@@ -33,8 +34,9 @@ export default function BookingTimer({ slot, onExpire, onCancel, isPremium }: Pr
     : 0;
 
   const openMaps = () => {
+    const origin = userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : "";
     window.open(
-      `https://www.google.com/maps/dir/?api=1&destination=${slot.lat},${slot.lng}`,
+      `https://www.google.com/maps/dir/?api=1${origin}&destination=${slot.lat},${slot.lng}&travelmode=driving`,
       "_blank"
     );
   };
