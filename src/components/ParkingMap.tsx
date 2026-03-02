@@ -1,9 +1,12 @@
 import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer } from "react-leaflet/MapContainer";
+import { TileLayer } from "react-leaflet/TileLayer";
+import { Marker } from "react-leaflet/Marker";
+import { Popup } from "react-leaflet/Popup";
+import { useMap } from "react-leaflet/hooks";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ParkingSlot, UserLocation } from "@/types/parking";
-import { Button } from "@/components/ui/button";
 import { Navigation } from "lucide-react";
 
 // Fix default marker icon issue with bundlers
