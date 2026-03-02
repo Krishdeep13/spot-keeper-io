@@ -13,7 +13,7 @@ import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map } from "lucide-reac
 import { Button } from "@/components/ui/button";
 
 // Simulated parking lot center (will be near user for demo)
-const LOT_CENTER = { lat: 12.7856, lng: 80.2209 }; // Kelambakkam, Chennai
+const LOT_CENTER = { lat: 12.8402, lng: 80.1534 }; // ~200m from VIT Chennai
 
 const generateSlots = (): ParkingSlot[] => {
   const statuses: Array<ParkingSlot["status"]> = [
@@ -26,8 +26,8 @@ const generateSlots = (): ParkingSlot[] => {
     id: `slot-${i + 1}`,
     label: `${String.fromCharCode(65 + Math.floor(i / 5))}${(i % 5) + 1}`,
     status,
-    lat: 12.7856 + (Math.random() - 0.5) * 0.002,
-    lng: 80.2209 + (Math.random() - 0.5) * 0.002,
+    lat: 12.8402 + (Math.random() - 0.5) * 0.001,
+    lng: 80.1534 + (Math.random() - 0.5) * 0.001,
   }));
 };
 
@@ -141,7 +141,7 @@ export default function Index() {
             <h2 className="text-2xl font-bold text-foreground">Parking Lot A</h2>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-3.5 w-3.5" />
-              <span>Kelambakkam, Chennai</span>
+              <span>Near VIT Chennai, Kelambakkam</span>
             </div>
           </div>
           <div className="text-right">
