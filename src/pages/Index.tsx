@@ -174,6 +174,7 @@ export default function Index() {
             onExpire={handleExpire}
             onCancel={handleCancel}
             isPremium={isPremium}
+            userLocation={location}
           />
         )}
 
