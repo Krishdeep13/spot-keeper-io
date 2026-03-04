@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ParkingSlot } from "@/types/parking";
 import { useGeolocation, getDistanceMeters } from "@/hooks/useGeolocation";
+import { useESP32Sensor } from "@/hooks/useESP32Sensor";
 import ParkingSlotCard from "@/components/ParkingSlotCard";
 import ParkingMap from "@/components/ParkingMap";
 import BookingTimer from "@/components/BookingTimer";
@@ -9,36 +10,53 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map } from "lucide-react";
+import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map, Wifi, WifiOff, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-// Simulated parking lot center (will be near user for demo)
-const LOT_CENTER = { lat: 12.8402, lng: 80.1534 }; // ~200m from VIT Chennai
+// Parking slot location (~200m from VIT Chennai)
+const SLOT_LOCATION = { lat: 12.8410, lng: 80.1540 };
 
-const generateSlots = (): ParkingSlot[] => {
-  const statuses: Array<ParkingSlot["status"]> = [
-    "vacant", "occupied", "vacant", "vacant", "occupied",
-    "vacant", "occupied", "vacant", "vacant", "vacant",
-    "occupied", "vacant", "vacant", "occupied", "vacant",
-    "vacant", "occupied", "occupied", "vacant", "vacant",
-  ];
-  return statuses.map((status, i) => ({
-    id: `slot-${i + 1}`,
-    label: `${String.fromCharCode(65 + Math.floor(i / 5))}${(i % 5) + 1}`,
-    status,
-    lat: 12.8402 + (Math.random() - 0.5) * 0.001,
-    lng: 80.1534 + (Math.random() - 0.5) * 0.001,
-  }));
-};
+const createSlot = (status: ParkingSlot["status"] = "vacant"): ParkingSlot => ({
+  id: "slot-1",
+  label: "A1",
+  status,
+  lat: SLOT_LOCATION.lat,
+  lng: SLOT_LOCATION.lng,
+});
 
 export default function Index() {
-  const [slots, setSlots] = useState<ParkingSlot[]>(generateSlots);
+  const [slot, setSlot] = useState<ParkingSlot>(createSlot);
   const [bookedSlotId, setBookedSlotId] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [showEspConfig, setShowEspConfig] = useState(false);
+  const [espUrlInput, setEspUrlInput] = useState("http://192.168.1.100");
+  const [espEnabled, setEspEnabled] = useState(false);
+
   const { location, error: geoError, loading: geoLoading, requestLocation } = useGeolocation();
   const { toast } = useToast();
 
-  const bookedSlot = slots.find((s) => s.id === bookedSlotId);
+  const {
+    sensorStatus,
+    isConnected: espConnected,
+    error: espError,
+    esp32Url,
+    setEsp32Url,
+  } = useESP32Sensor({ url: espUrlInput, enabled: espEnabled });
+
+  // Update slot status based on ESP32 sensor data
+  useEffect(() => {
+    if (!espEnabled || !espConnected) return;
+    // Don't override if user has reserved
+    if (bookedSlotId === slot.id) return;
+
+    setSlot((prev) => ({
+      ...prev,
+      status: sensorStatus === "occupied" ? "occupied" : "vacant",
+    }));
+  }, [sensorStatus, espConnected, espEnabled, bookedSlotId, slot.id]);
+
+  const slots = [slot]; // Single slot array for components
 
   const handleBook = useCallback(
     (slotId: string) => {
@@ -47,8 +65,10 @@ export default function Index() {
         return;
       }
 
-      const slot = slots.find((s) => s.id === slotId);
-      if (!slot) return;
+      if (slot.status !== "vacant") {
+        toast({ title: "Slot unavailable", description: "This slot is currently occupied.", variant: "destructive" });
+        return;
+      }
 
       // GPS validation
       if (!location) {
@@ -69,44 +89,34 @@ export default function Index() {
       const duration = isPremium ? 15 : 5;
       const expiresAt = Date.now() + duration * 60 * 1000;
 
-      setSlots((prev) =>
-        prev.map((s) =>
-          s.id === slotId ? { ...s, status: "reserved" as const, bookedBy: "user", expiresAt } : s
-        )
-      );
+      setSlot((prev) => ({ ...prev, status: "reserved", bookedBy: "user", expiresAt }));
       setBookedSlotId(slotId);
       toast({ title: "Slot booked!", description: `${slot.label} reserved for ${duration} minutes.` });
     },
-    [bookedSlotId, slots, location, isPremium, toast]
+    [bookedSlotId, slot, location, isPremium, toast]
   );
 
   const handleExpire = useCallback(() => {
     if (!bookedSlotId) return;
-    setSlots((prev) =>
-      prev.map((s) =>
-        s.id === bookedSlotId
-          ? { ...s, status: "vacant" as const, bookedBy: undefined, expiresAt: undefined }
-          : s
-      )
-    );
+    setSlot((prev) => ({ ...prev, status: "vacant", bookedBy: undefined, expiresAt: undefined }));
     setBookedSlotId(null);
     toast({ title: "Booking expired", description: "Your reservation has timed out." });
   }, [bookedSlotId, toast]);
 
   const handleCancel = useCallback(() => {
     if (!bookedSlotId) return;
-    setSlots((prev) =>
-      prev.map((s) =>
-        s.id === bookedSlotId
-          ? { ...s, status: "vacant" as const, bookedBy: undefined, expiresAt: undefined }
-          : s
-      )
-    );
+    setSlot((prev) => ({ ...prev, status: "vacant", bookedBy: undefined, expiresAt: undefined }));
     setBookedSlotId(null);
     toast({ title: "Booking cancelled" });
   }, [bookedSlotId, toast]);
 
-  const vacantCount = slots.filter((s) => s.status === "vacant").length;
+  const bookedSlot = bookedSlotId ? slot : undefined;
+  const vacantCount = slot.status === "vacant" ? 1 : 0;
+
+  const handleSaveEspUrl = () => {
+    setEsp32Url(espUrlInput);
+    toast({ title: "ESP32 URL updated", description: `Now polling ${espUrlInput}` });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,6 +158,55 @@ export default function Index() {
             <p className="text-3xl font-bold font-mono text-primary">{vacantCount}</p>
             <p className="text-xs text-muted-foreground">spots free</p>
           </div>
+        </div>
+
+        {/* ESP32 Sensor Connection */}
+        <div className="rounded-xl bg-secondary/50 border border-border px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {espEnabled && espConnected ? (
+                <Wifi className="h-4 w-4 text-slot-vacant" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm text-secondary-foreground">
+                {!espEnabled
+                  ? "ESP32 sensor disconnected"
+                  : espConnected
+                  ? "ESP32 sensor connected"
+                  : espError
+                  ? `ESP32 error: ${espError}`
+                  : "Connecting to ESP32..."}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEspConfig(!showEspConfig)}
+                className="h-8 w-8 p-0"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+              <Switch
+                checked={espEnabled}
+                onCheckedChange={setEspEnabled}
+              />
+            </div>
+          </div>
+          {showEspConfig && (
+            <div className="flex gap-2">
+              <Input
+                placeholder="ESP32 IP (e.g. http://192.168.1.100)"
+                value={espUrlInput}
+                onChange={(e) => setEspUrlInput(e.target.value)}
+                className="text-sm h-9"
+              />
+              <Button size="sm" onClick={handleSaveEspUrl} className="h-9">
+                Save
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Location Status */}
@@ -192,16 +251,15 @@ export default function Index() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="grid">
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-              {slots.map((slot) => (
+            <div className="flex justify-center">
+              <div className="w-32">
                 <ParkingSlotCard
-                  key={slot.id}
                   slot={slot}
                   onBook={handleBook}
                   disabled={!!bookedSlotId || !location}
                   isUserSlot={slot.id === bookedSlotId}
                 />
-              ))}
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="map">
