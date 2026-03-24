@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const ADMIN_CREDENTIALS = { username: "admin", password: "admin123" };
-const USER_CREDENTIALS = { username: "user", password: "user123" };
+const USER_CREDENTIALS = { username: "user1", password: "password1" };
 
 export default function Login() {
   const [username, setUsername] = useState("");
