@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map, Wifi, WifiOff, Settings } from "lucide-react";
+import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map, Wifi, WifiOff, Settings, LogIn, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
