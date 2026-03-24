@@ -141,7 +141,7 @@ export default function Index() {
               <p className="text-xs text-muted-foreground">Intelligent Parking</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
               <Crown className="h-3.5 w-3.5 text-slot-reserved" />
               <Label htmlFor="premium" className="text-xs font-medium text-secondary-foreground cursor-pointer">
@@ -149,6 +149,20 @@ export default function Index() {
               </Label>
               <Switch id="premium" checked={isPremium} onCheckedChange={setIsPremium} />
             </div>
+            {userRole === "admin" && (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="h-8 w-8 p-0">
+                <Shield className="h-4 w-4" />
+              </Button>
+            )}
+            {userRole ? (
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 w-8 p-0">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="h-8 w-8 p-0">
+                <LogIn className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
