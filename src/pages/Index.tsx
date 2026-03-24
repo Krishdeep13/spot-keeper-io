@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ParkingSlot } from "@/types/parking";
 import { useGeolocation, getDistanceMeters } from "@/hooks/useGeolocation";
 import { useESP32Sensor } from "@/hooks/useESP32Sensor";
