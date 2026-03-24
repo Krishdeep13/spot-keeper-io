@@ -1,26 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
 
 /**
- * Hook to poll an ESP32 sensor endpoint for parking slot status.
+ * Hook to poll an ESP32 with TWO ultrasonic sensors:
+ * - Sensor 1 (entry): counts cars entering the parking row
+ * - Sensor 2 (exit): counts cars exiting the parking row
  * 
- * ESP32 Setup:
- * - The ESP32 should host a simple HTTP server (e.g., on port 80)
- * - It should respond to GET requests at the root or /status with JSON:
- *   { "occupied": true }  → sensor detects object (hand/car)
- *   { "occupied": false } → sensor detects nothing (slot is free)
+ * ESP32 should respond to GET /status with JSON:
+ *   { "entry": 3, "exit": 1 }
  * 
- * Arduino IDE example sketch endpoint:
+ * Cars currently parked = entry - exit
+ * 
+ * Arduino IDE example:
  *   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
- *     bool occupied = digitalRead(SENSOR_PIN) == HIGH;
- *     String json = "{\"occupied\":" + String(occupied ? "true" : "false") + "}";
+ *     String json = "{\"entry\":" + String(entryCount) + ",\"exit\":" + String(exitCount) + "}";
  *     request->send(200, "application/json", json);
  *   });
  */
 
-const DEFAULT_ESP32_URL = "http://192.168.1.100"; // Change to your ESP32's IP
-const POLL_INTERVAL_MS = 1000; // Poll every second
-
-export type SensorStatus = "occupied" | "vacant";
+const DEFAULT_ESP32_URL = "http://192.168.1.100";
+const POLL_INTERVAL_MS = 1000;
 
 interface UseESP32SensorOptions {
   url?: string;
@@ -29,7 +27,9 @@ interface UseESP32SensorOptions {
 }
 
 interface UseESP32SensorResult {
-  sensorStatus: SensorStatus;
+  carsParked: number;
+  entryCount: number;
+  exitCount: number;
   isConnected: boolean;
   error: string | null;
   lastUpdated: number | null;
@@ -39,7 +39,8 @@ interface UseESP32SensorResult {
 
 export function useESP32Sensor(options?: UseESP32SensorOptions): UseESP32SensorResult {
   const [esp32Url, setEsp32Url] = useState(options?.url || DEFAULT_ESP32_URL);
-  const [sensorStatus, setSensorStatus] = useState<SensorStatus>("vacant");
+  const [entryCount, setEntryCount] = useState(0);
+  const [exitCount, setExitCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -52,15 +53,17 @@ export function useESP32Sensor(options?: UseESP32SensorOptions): UseESP32SensorR
       const response = await fetch(`${esp32Url}/status`, {
         signal: AbortSignal.timeout(3000),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      const occupied = data.occupied === true;
-      
-      setSensorStatus(occupied ? "occupied" : "vacant");
+      const entry = typeof data.entry === "number" ? data.entry : 0;
+      const exit = typeof data.exit === "number" ? data.exit : 0;
+
+      setEntryCount(entry);
+      setExitCount(exit);
       setIsConnected(true);
       setError(null);
       setLastUpdated(Date.now());
@@ -72,16 +75,17 @@ export function useESP32Sensor(options?: UseESP32SensorOptions): UseESP32SensorR
 
   useEffect(() => {
     if (!enabled) return;
-
-    // Initial fetch
     fetchStatus();
-
     const interval = setInterval(fetchStatus, pollInterval);
     return () => clearInterval(interval);
   }, [fetchStatus, pollInterval, enabled]);
 
+  const carsParked = Math.max(0, entryCount - exitCount);
+
   return {
-    sensorStatus,
+    carsParked,
+    entryCount,
+    exitCount,
     isConnected,
     error,
     lastUpdated,

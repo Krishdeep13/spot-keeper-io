@@ -18,17 +18,20 @@ import { Input } from "@/components/ui/input";
 // Parking slot location (~200m from VIT Chennai)
 const SLOT_LOCATION = { lat: 12.8410, lng: 80.1540 };
 
-const createSlot = (status: ParkingSlot["status"] = "vacant"): ParkingSlot => ({
-  id: "slot-1",
-  label: "A1",
-  status,
-  lat: SLOT_LOCATION.lat,
-  lng: SLOT_LOCATION.lng,
-});
+const TOTAL_SLOTS = 4;
+
+const createSlots = (): ParkingSlot[] =>
+  Array.from({ length: TOTAL_SLOTS }, (_, i) => ({
+    id: `slot-${i + 1}`,
+    label: `A${i + 1}`,
+    status: "vacant" as const,
+    lat: SLOT_LOCATION.lat + i * 0.00005,
+    lng: SLOT_LOCATION.lng,
+  }));
 
 export default function Index() {
   const navigate = useNavigate();
-  const [slot, setSlot] = useState<ParkingSlot>(createSlot);
+  const [slots, setSlots] = useState<ParkingSlot[]>(createSlots);
   const [bookedSlotId, setBookedSlotId] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [showEspConfig, setShowEspConfig] = useState(false);
@@ -46,26 +49,32 @@ export default function Index() {
   const { toast } = useToast();
 
   const {
-    sensorStatus,
+    carsParked,
+    entryCount,
+    exitCount,
     isConnected: espConnected,
     error: espError,
     esp32Url,
     setEsp32Url,
   } = useESP32Sensor({ url: espUrlInput, enabled: espEnabled });
 
-  // Update slot status based on ESP32 sensor data
+  // Update slot statuses based on entry/exit sensor counts
   useEffect(() => {
     if (!espEnabled || !espConnected) return;
-    // Don't override if user has reserved
-    if (bookedSlotId === slot.id) return;
 
-    setSlot((prev) => ({
-      ...prev,
-      status: sensorStatus === "occupied" ? "occupied" : "vacant",
-    }));
-  }, [sensorStatus, espConnected, espEnabled, bookedSlotId, slot.id]);
-
-  const slots = [slot]; // Single slot array for components
+    setSlots((prev) =>
+      prev.map((slot, index) => {
+        // Don't override user-reserved slots
+        if (slot.id === bookedSlotId) return slot;
+        // First N slots are occupied based on carsParked count
+        const shouldBeOccupied = index < carsParked;
+        return {
+          ...slot,
+          status: shouldBeOccupied ? "occupied" : "vacant",
+        };
+      })
+    );
+  }, [carsParked, espConnected, espEnabled, bookedSlotId]);
 
   const handleBook = useCallback(
     (slotId: string) => {
@@ -74,18 +83,18 @@ export default function Index() {
         return;
       }
 
-      if (slot.status !== "vacant") {
+      const targetSlot = slots.find((s) => s.id === slotId);
+      if (!targetSlot || targetSlot.status !== "vacant") {
         toast({ title: "Slot unavailable", description: "This slot is currently occupied.", variant: "destructive" });
         return;
       }
 
-      // GPS validation
       if (!location) {
         toast({ title: "Location required", description: "Enable GPS to book a slot.", variant: "destructive" });
         return;
       }
 
-      const distance = getDistanceMeters(location.lat, location.lng, slot.lat, slot.lng);
+      const distance = getDistanceMeters(location.lat, location.lng, targetSlot.lat, targetSlot.lng);
       if (distance > 500) {
         toast({
           title: "Too far away",
@@ -98,29 +107,41 @@ export default function Index() {
       const duration = isPremium ? 15 : 5;
       const expiresAt = Date.now() + duration * 60 * 1000;
 
-      setSlot((prev) => ({ ...prev, status: "reserved", bookedBy: "user", expiresAt }));
+      setSlots((prev) =>
+        prev.map((s) =>
+          s.id === slotId ? { ...s, status: "reserved", bookedBy: "user", expiresAt } : s
+        )
+      );
       setBookedSlotId(slotId);
-      toast({ title: "Slot booked!", description: `${slot.label} reserved for ${duration} minutes.` });
+      toast({ title: "Slot booked!", description: `${targetSlot.label} reserved for ${duration} minutes.` });
     },
-    [bookedSlotId, slot, location, isPremium, toast]
+    [bookedSlotId, slots, location, isPremium, toast]
   );
 
   const handleExpire = useCallback(() => {
     if (!bookedSlotId) return;
-    setSlot((prev) => ({ ...prev, status: "vacant", bookedBy: undefined, expiresAt: undefined }));
+    setSlots((prev) =>
+      prev.map((s) =>
+        s.id === bookedSlotId ? { ...s, status: "vacant", bookedBy: undefined, expiresAt: undefined } : s
+      )
+    );
     setBookedSlotId(null);
     toast({ title: "Booking expired", description: "Your reservation has timed out." });
   }, [bookedSlotId, toast]);
 
   const handleCancel = useCallback(() => {
     if (!bookedSlotId) return;
-    setSlot((prev) => ({ ...prev, status: "vacant", bookedBy: undefined, expiresAt: undefined }));
+    setSlots((prev) =>
+      prev.map((s) =>
+        s.id === bookedSlotId ? { ...s, status: "vacant", bookedBy: undefined, expiresAt: undefined } : s
+      )
+    );
     setBookedSlotId(null);
     toast({ title: "Booking cancelled" });
   }, [bookedSlotId, toast]);
 
-  const bookedSlot = bookedSlotId ? slot : undefined;
-  const vacantCount = slot.status === "vacant" ? 1 : 0;
+  const bookedSlot = bookedSlotId ? slots.find((s) => s.id === bookedSlotId) : undefined;
+  const vacantCount = slots.filter((s) => s.status === "vacant").length;
 
   const handleSaveEspUrl = () => {
     setEsp32Url(espUrlInput);
@@ -178,7 +199,7 @@ export default function Index() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold font-mono text-primary">{vacantCount}</p>
+            <p className="text-3xl font-bold font-mono text-primary">{vacantCount}/{TOTAL_SLOTS}</p>
             <p className="text-xs text-muted-foreground">spots free</p>
           </div>
         </div>
@@ -194,9 +215,9 @@ export default function Index() {
               )}
               <span className="text-sm text-secondary-foreground">
                 {!espEnabled
-                  ? "ESP32 sensor disconnected"
+                  ? "ESP32 sensors disconnected"
                   : espConnected
-                  ? "ESP32 sensor connected"
+                  ? `Sensors live — Entry: ${entryCount} | Exit: ${exitCount} | Parked: ${carsParked}`
                   : espError
                   ? `ESP32 error: ${espError}`
                   : "Connecting to ESP32..."}
@@ -211,10 +232,7 @@ export default function Index() {
               >
                 <Settings className="h-3.5 w-3.5" />
               </Button>
-              <Switch
-                checked={espEnabled}
-                onCheckedChange={setEspEnabled}
-              />
+              <Switch checked={espEnabled} onCheckedChange={setEspEnabled} />
             </div>
           </div>
           {showEspConfig && (
@@ -274,15 +292,16 @@ export default function Index() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="grid">
-            <div className="flex justify-center">
-              <div className="w-32">
+            <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto">
+              {slots.map((slot) => (
                 <ParkingSlotCard
+                  key={slot.id}
                   slot={slot}
                   onBook={handleBook}
                   disabled={!!bookedSlotId || !location}
                   isUserSlot={slot.id === bookedSlotId}
                 />
-              </div>
+              ))}
             </div>
           </TabsContent>
           <TabsContent value="map">
