@@ -95,7 +95,7 @@ export default function Login() {
             </div>
             <div className="rounded-lg bg-muted p-2 text-center">
               <p className="font-semibold">User</p>
-              <p>user / user123</p>
+              <p>user1 / password1</p>
             </div>
           </div>
         </div>
