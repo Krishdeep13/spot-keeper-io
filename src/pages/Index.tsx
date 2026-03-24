@@ -27,12 +27,20 @@ const createSlot = (status: ParkingSlot["status"] = "vacant"): ParkingSlot => ({
 });
 
 export default function Index() {
+  const navigate = useNavigate();
   const [slot, setSlot] = useState<ParkingSlot>(createSlot);
   const [bookedSlotId, setBookedSlotId] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [showEspConfig, setShowEspConfig] = useState(false);
   const [espUrlInput, setEspUrlInput] = useState("http://192.168.1.100");
   const [espEnabled, setEspEnabled] = useState(false);
+  const userRole = localStorage.getItem("parksmartRole");
+
+  const handleLogout = () => {
+    localStorage.removeItem("parksmartRole");
+    localStorage.removeItem("parksmartUser");
+    navigate("/login");
+  };
 
   const { location, error: geoError, loading: geoLoading, requestLocation } = useGeolocation();
   const { toast } = useToast();
