@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ParkingSlot } from "@/types/parking";
 import { useGeolocation, getDistanceMeters } from "@/hooks/useGeolocation";
 import { useESP32Sensor } from "@/hooks/useESP32Sensor";
@@ -10,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map, Wifi, WifiOff, Settings } from "lucide-react";
+import { Car, MapPin, Crown, RefreshCw, Locate, Grid3X3, Map, Wifi, WifiOff, Settings, LogIn, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -26,12 +27,20 @@ const createSlot = (status: ParkingSlot["status"] = "vacant"): ParkingSlot => ({
 });
 
 export default function Index() {
+  const navigate = useNavigate();
   const [slot, setSlot] = useState<ParkingSlot>(createSlot);
   const [bookedSlotId, setBookedSlotId] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [showEspConfig, setShowEspConfig] = useState(false);
   const [espUrlInput, setEspUrlInput] = useState("http://192.168.1.100");
   const [espEnabled, setEspEnabled] = useState(false);
+  const userRole = localStorage.getItem("parksmartRole");
+
+  const handleLogout = () => {
+    localStorage.removeItem("parksmartRole");
+    localStorage.removeItem("parksmartUser");
+    navigate("/login");
+  };
 
   const { location, error: geoError, loading: geoLoading, requestLocation } = useGeolocation();
   const { toast } = useToast();
@@ -132,7 +141,7 @@ export default function Index() {
               <p className="text-xs text-muted-foreground">Intelligent Parking</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
               <Crown className="h-3.5 w-3.5 text-slot-reserved" />
               <Label htmlFor="premium" className="text-xs font-medium text-secondary-foreground cursor-pointer">
@@ -140,6 +149,20 @@ export default function Index() {
               </Label>
               <Switch id="premium" checked={isPremium} onCheckedChange={setIsPremium} />
             </div>
+            {userRole === "admin" && (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="h-8 w-8 p-0">
+                <Shield className="h-4 w-4" />
+              </Button>
+            )}
+            {userRole ? (
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 w-8 p-0">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="h-8 w-8 p-0">
+                <LogIn className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
