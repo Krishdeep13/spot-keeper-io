@@ -315,11 +315,12 @@ export default function Index() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="grid">
-            <div className="flex flex-col gap-3 max-w-sm mx-auto">
+            <div className="flex items-center gap-3 justify-center overflow-x-auto py-2">
               {/* Entry sensor indicator */}
-              <div className="flex items-center gap-2 justify-center py-2 rounded-lg border border-dashed border-green-500/50 bg-green-500/5">
+              <div className="flex flex-col items-center gap-1 py-3 px-2 rounded-lg border border-dashed border-green-500/50 bg-green-500/5 min-w-[60px]">
                 <LogIn className="h-4 w-4 text-green-500" />
-                <span className="text-xs font-medium text-green-600">▼ ENTRANCE SENSOR</span>
+                <span className="text-[10px] font-medium text-green-600 whitespace-nowrap">ENTRY</span>
+                <span className="text-[10px] text-green-600">▶</span>
               </div>
 
               {slots.map((slot) => (
@@ -333,9 +334,10 @@ export default function Index() {
               ))}
 
               {/* Exit sensor indicator */}
-              <div className="flex items-center gap-2 justify-center py-2 rounded-lg border border-dashed border-orange-500/50 bg-orange-500/5">
+              <div className="flex flex-col items-center gap-1 py-3 px-2 rounded-lg border border-dashed border-orange-500/50 bg-orange-500/5 min-w-[60px]">
                 <LogOut className="h-4 w-4 text-orange-500" />
-                <span className="text-xs font-medium text-orange-600">▼ EXIT SENSOR</span>
+                <span className="text-[10px] font-medium text-orange-600 whitespace-nowrap">EXIT</span>
+                <span className="text-[10px] text-orange-600">▶</span>
               </div>
             </div>
           </TabsContent>
