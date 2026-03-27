@@ -315,7 +315,13 @@ export default function Index() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="grid">
-            <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto">
+            <div className="flex flex-col gap-3 max-w-sm mx-auto">
+              {/* Entry sensor indicator */}
+              <div className="flex items-center gap-2 justify-center py-2 rounded-lg border border-dashed border-green-500/50 bg-green-500/5">
+                <LogIn className="h-4 w-4 text-green-500" />
+                <span className="text-xs font-medium text-green-600">▼ ENTRANCE SENSOR</span>
+              </div>
+
               {slots.map((slot) => (
                 <ParkingSlotCard
                   key={slot.id}
@@ -325,6 +331,12 @@ export default function Index() {
                   isUserSlot={slot.id === bookedSlotId}
                 />
               ))}
+
+              {/* Exit sensor indicator */}
+              <div className="flex items-center gap-2 justify-center py-2 rounded-lg border border-dashed border-orange-500/50 bg-orange-500/5">
+                <LogOut className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-medium text-orange-600">▼ EXIT SENSOR</span>
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="map">
