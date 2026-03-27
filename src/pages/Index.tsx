@@ -207,22 +207,7 @@ export default function Index() {
         {/* ESP32 Sensor Connection */}
         <div className="rounded-xl bg-secondary/50 border border-border px-4 py-3 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {espEnabled && espConnected ? (
-                <Wifi className="h-4 w-4 text-slot-vacant" />
-              ) : (
-                <WifiOff className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className="text-sm text-secondary-foreground">
-                {!espEnabled
-                  ? "ESP32 sensors disconnected"
-                  : espConnected
-                  ? `Sensors live — Entry: ${entryCount} | Exit: ${exitCount} | Parked: ${carsParked}`
-                  : espError
-                  ? `ESP32 error: ${espError}`
-                  : "Connecting to ESP32..."}
-              </span>
-            </div>
+            <span className="text-sm font-medium text-secondary-foreground">ESP32 Sensors</span>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -235,6 +220,44 @@ export default function Index() {
               <Switch checked={espEnabled} onCheckedChange={setEspEnabled} />
             </div>
           </div>
+
+          {/* Two sensor status rows */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Entry Sensor */}
+            <div className="flex items-center gap-2 rounded-lg bg-background/60 border border-border px-3 py-2">
+              <div className={`h-2.5 w-2.5 rounded-full ${espEnabled && espConnected ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"}`} />
+              <LogIn className={`h-4 w-4 ${espEnabled && espConnected ? "text-green-500" : "text-muted-foreground"}`} />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-secondary-foreground">Entry Sensor</span>
+                <span className="text-xs text-muted-foreground">
+                  {!espEnabled ? "Off" : espConnected ? `${entryCount} cars entered` : "No signal"}
+                </span>
+              </div>
+            </div>
+
+            {/* Exit Sensor */}
+            <div className="flex items-center gap-2 rounded-lg bg-background/60 border border-border px-3 py-2">
+              <div className={`h-2.5 w-2.5 rounded-full ${espEnabled && espConnected ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"}`} />
+              <LogOut className={`h-4 w-4 ${espEnabled && espConnected ? "text-green-500" : "text-muted-foreground"}`} />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-secondary-foreground">Exit Sensor</span>
+                <span className="text-xs text-muted-foreground">
+                  {!espEnabled ? "Off" : espConnected ? `${exitCount} cars exited` : "No signal"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {espEnabled && (
+            <div className="text-center text-sm text-secondary-foreground">
+              {espConnected
+                ? <span>Currently parked: <strong className="text-primary font-mono">{carsParked}</strong> / {TOTAL_SLOTS}</span>
+                : <span className="text-destructive">{espError || "Connecting..."}</span>
+              }
+            </div>
+          )}
+
           {showEspConfig && (
             <div className="flex gap-2">
               <Input
